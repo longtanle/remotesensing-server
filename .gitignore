@@ -1,4 +1,7 @@
 main/database.yml
+main/data
+tests/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

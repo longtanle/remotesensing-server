@@ -1,0 +1,2 @@
+USGS_USERNAME=longlt_hcmut
+USGS_PASSWORD=longlt1870385

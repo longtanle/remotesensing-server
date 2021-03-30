@@ -1,25 +1,11 @@
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
-
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/reddimohan/flask-rest-api-barebones-with-authentication">
-  </a>
 
-  <h3 align="center">Flask + Mongodb + REST API + JWT Authentication</h3>
+  <h3 align="center">Remote Sensing Server for Hazard Monitoring System</h3>
 
   <p align="center">
     Boilerplate code for quick implimentation of REST API with JWT Authentication.
-    <br />
-    <br />
-    <a href="https://github.com/reddimohan/flask-rest-api-barebones-with-authentication/issues">Report Bug</a>
   </p>
 </p>
 

@@ -27,7 +27,6 @@ class NewBook(Resource):
         self.utils = Utils()
         self.book_service = BookService()
 
-    @jwt_required
     @api.expect(book_model)
     def post(self):
         """ Save new book object into database """
@@ -56,7 +55,6 @@ class NewBook(Resource):
             "message": msg,
         }, code
 
-    @jwt_required
     @api.doc(parser=None)
     def get(self):
         """ Get list of books """
