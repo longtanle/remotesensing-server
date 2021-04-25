@@ -44,7 +44,10 @@ class CalibrateLandsatBand():
         #    print('Band Array: ', self.band_array)
         
         radiance = (self.band_metadata['reflectance_mult']) * (self.band_array) + self.band_metadata['reflectance_add']
-        radiance[self.band_array==0] = np.nan
+
+        # radiance[self.band_array==0] = np.nan
+        radiance[self.band_array==0] = -99
+
         return radiance
     
     # Radiance to ToA Reflectence
@@ -95,7 +98,10 @@ class CalibrateLandsatBand():
             
     #   radiance = ((self.band_metadata['radiance_maximum']-self.band_metadata['radiance_minimum']) / (self.band_metadata['quantize_cal_maximum']-self.band_metadata['quantize_cal_minimum'])) * (self.band_array - self.band_metadata['quantize_cal_minimum']) + self.band_metadata['radiance_minimum']
         radiance = (self.band_metadata['radiance_mult']) * (self.band_array) + self.band_metadata['radiance_add']
-        radiance[self.band_array==0] = np.nan
+        
+        # radiance[self.band_array==0] = np.nan
+        radiance[self.band_array==0] = -99
+
         return radiance
     
     # TINH NHIET DO SANG (BRIGHTNESS TEMPERATURE)

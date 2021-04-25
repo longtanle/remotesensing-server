@@ -64,6 +64,7 @@ class LSTEstimator():
         print('Path to Band 10: ', self.band_10_path)
         print('Path to Band 11: ', self.band_11_path)
 
+        self.scene_id = self.metadata.metadata['LANDSAT_SCENE_ID']
         self.temp_dir = temp_dir
         self.lse_mode = LSE_mode
 
@@ -87,9 +88,9 @@ class LSTEstimator():
         
         if self.DEBUG == True:
             self.__save_array_to_gtiff(band4_reflectance, gdal.Open(self.band_10_path),
-                                       os.path.join(self.temp_dir, 'latest_b4_reflectance.tif'))
+                                       os.path.join(self.temp_dir, self.scene_id + '_Reflectance_B4.tif'))
             self.__save_array_to_gtiff(band5_reflectance, gdal.Open(self.band_10_path),
-                                       os.path.join(self.temp_dir, 'latest_b5_reflectance.tif'))
+                                       os.path.join(self.temp_dir, self.scene_id + '_Reflectance_B5.tif'))
         
         # NDIV = (NIR - RED)/(NIR + RED)
         ndvi = (band5_reflectance - band4_reflectance) / (band5_reflectance + band4_reflectance)
@@ -121,7 +122,7 @@ class LSTEstimator():
         
         if self.DEBUG == True:
             self.__save_array_to_gtiff(ndvi, gdal.Open(self.band_10_path), 
-                                       os.path.join(self.temp_dir, 'latest_ndvi.tif'))
+                                       os.path.join(self.temp_dir, self.scene_id + '_NDVI.tif'))
 
         return lse
 
@@ -139,9 +140,9 @@ class LSTEstimator():
 
         if self.DEBUG  == True:
             self.__save_array_to_gtiff(b10_bt, gdal.Open(self.band_10_path),
-                                       os.path.join(self.temp_dir, 'latest_b10_bt.tif'))
+                                       os.path.join(self.temp_dir, self.scene_id + '_BT_B10.tif'))
             self.__save_array_to_gtiff(b11_bt, gdal.Open(self.band_10_path),
-                                       os.path.join(self.temp_dir, 'latest_b11_bt.tif'))
+                                       os.path.join(self.temp_dir, self.scene_id + '_BT_B11.tif'))
 
         return b10_bt, b11_bt
 
@@ -171,29 +172,27 @@ class LSTEstimator():
         print('LST MIN VLUES : ' + str(np.amin(lst_b10)))
         print('LST MAX VLUES : ' + str(np.amax(lst_b10)))
         
-        plt.imshow(lst_b10, cmap='RdYlGn')
-        plt.colorbar()
-        plt.title('LST B10')
-        plt.xlabel('Column #')
-        plt.ylabel('Row #')
-        plt.savefig(os.path.join(self.temp_dir, 'lst_b10.png'))
+        # plt.imshow(lst_b10, cmap='RdYlGn')
+        # plt.colorbar()
+        # plt.title('LST B10')
+        # plt.xlabel('Column #')
+        # plt.ylabel('Row #')
+        # plt.savefig(os.path.join(self.temp_dir, 'lst_b10.png'))
         
-        plt.imshow(lst_b11, cmap='RdYlGn')
-        plt.colorbar()
-        plt.title('LST B11')
-        plt.xlabel('Column #')
-        plt.ylabel('Row #')
-        plt.savefig(os.path.join(self.temp_dir, 'lst_b11.png'))
-        
-              
+        # plt.imshow(lst_b11, cmap='RdYlGn')
+        # plt.colorbar()
+        # plt.title('LST B11')
+        # plt.xlabel('Column #')
+        # plt.ylabel('Row #')
+        # plt.savefig(os.path.join(self.temp_dir, 'lst_b11.png'))
         
         if self.DEBUG  == True:
             self.__save_array_to_gtiff(lse, gdal.Open(self.band_10_path),
-                                       os.path.join(self.temp_dir, 'latest_lse.tif'))
+                                       os.path.join(self.temp_dir, self.scene_id + '_LSE.tif'))
             self.__save_array_to_gtiff(lst_b10, gdal.Open(self.band_10_path),
-                                           os.path.join(self.temp_dir, 'latest_lst_b10.tif'))  
+                                           os.path.join(self.temp_dir, self.scene_id + '_LST_B10.tif'))  
             self.__save_array_to_gtiff(lst_b11, gdal.Open(self.band_11_path),
-                                           os.path.join(self.temp_dir, 'latest_lst_b11.tif'))
+                                           os.path.join(self.temp_dir, self.scene_id + '_LST_B11.tif'))
         
         return lst_b10, lst_b11
 
@@ -224,10 +223,10 @@ class LSTEstimator():
         new_ds.SetProjection(original_projection)
         new_ds.SetGeoTransform(new_geotransform)
 
-        # to source grid
+        # to source grid dstNodata=np.nan
         new_ds_translated = gdal.Warp('', new_ds, format='MEM', xRes=original_geotransform[1],
                                       yRes=original_geotransform[5], outputBounds=[xMin, yMin, xMax, yMax],
-                                      dstNodata=np.nan, resampleAlg='cubic')
+                                      dstNodata=-99, resampleAlg='cubic')
 
         new_ds_translated_array = new_ds_translated.GetRasterBand(1).ReadAsArray()
 

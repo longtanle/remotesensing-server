@@ -39,6 +39,7 @@ class AODEstimator():
         self.temp_dir = temp_dir
         self.lse_mode = LSE_mode
 
+
     def transform_array_back_to_original_size(self, array, window_size, original_raster):
         original_geotransform = original_raster.GetGeoTransform()
         original_projection = original_raster.GetProjection()
@@ -70,7 +71,7 @@ class AODEstimator():
         new_ds_translated_array = new_ds_translated.GetRasterBand(1).ReadAsArray()
 
         return new_ds_translated_array
-        
+
     def __save_array_to_gtiff(self, array, domain_raster, gtiff_path):
         driver = gdal.GetDriverByName("GTiff")
         dataType = gdal.GDT_Float32

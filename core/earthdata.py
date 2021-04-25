@@ -37,7 +37,7 @@ try:
 except ImportError:
     import urllib2
 
-import gdal
+from osgeo import gdal
 from pyhdf import SD
 
 import rasterio
@@ -391,7 +391,7 @@ def make_mosaic_args( files, out_dir ):
 	def make_args(group, out_dir):
 		files = sorted(group['fn'].tolist())
 		elems = group[['product', 'date','version', 'production', 'band']].iloc[0].tolist()
-		out_fn = os.path.join( out_dir, '_'.join(elems) + '.tif').replace('_006_','_InteriorAK_006_')
+		out_fn = os.path.join( out_dir, '_'.join(elems) + '.tif').replace('_006_','_HCM_006_')
 		return [files] + [out_fn]
 
 	return [make_args( group, out_dir ) for i,group in df.groupby([ 'product', 'date', 'band' ])]
@@ -412,16 +412,16 @@ def run_mosaic_tiles( args, ncpus=5 ):
 	pool.close()
 	pool.join()
 
-def warp_to_3338( fn, out_fn ):
+def warp_to_32648( fn, out_fn ):
 	return subprocess.call([ 'gdalwarp','-q','-overwrite',
-				'-t_srs','EPSG:3338','-co','COMPRESS=LZW', fn, out_fn ])
+				'-t_srs','EPSG:32648','-co','COMPRESS=LZW', fn, out_fn ])
 
-def wrap_warp_to_3338(x):
-	return warp_to_3338(*x)
+def wrap_warp_to_32648(x):
+	return warp_to_32648(*x)
 
-def run_warp_to_3338( args, ncpus=5 ):
+def run_warp_to_32648( args, ncpus=5 ):
 	pool = mp.Pool( ncpus )
-	out = pool.map( wrap_warp_to_3338, args )
+	out = pool.map( wrap_warp_to_32648, args )
 	pool.close()
 	pool.join()
 	return out

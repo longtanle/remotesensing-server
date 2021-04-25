@@ -37,7 +37,7 @@ try:
 except ImportError:
     import urllib2
 
-import gdal
+from osgeo import gdal, ogr, osr
 from pyhdf.SD import SD, SDC
 
 import rasterio
@@ -343,7 +343,7 @@ def make_mosaic_args( files, out_dir ):
 	def make_args(group, out_dir):
 		files = sorted(group['fn'].tolist())
 		elems = group[['product', 'date','version', 'production', 'band']].iloc[0].tolist()
-		out_fn = os.path.join( out_dir, '_'.join(elems) + '.tif').replace('_006_','_InteriorAK_006_')
+		out_fn = os.path.join( out_dir, '_'.join(elems) + '.tif').replace('_006_','_HCM_006_')
 		return [files] + [out_fn]
 
 	return [make_args( group, out_dir ) for i,group in df.groupby([ 'product', 'date', 'band' ])]
@@ -366,7 +366,7 @@ def run_mosaic_tiles( args, ncpus=5 ):
 
 def warp_to_3338( fn, out_fn ):
 	return subprocess.call([ 'gdalwarp','-q','-overwrite',
-				'-t_srs','EPSG:3338','-co','COMPRESS=LZW', fn, out_fn ])
+				'-t_srs','EPSG:32648','-co','COMPRESS=LZW', fn, out_fn ])
 
 def wrap_warp_to_3338(x):
 	return warp_to_3338(*x)
@@ -379,20 +379,35 @@ def run_warp_to_3338( args, ncpus=5 ):
 	return out
 
 def rescale_values( fn ):
+
+	print(fn)
 	with rasterio.open( fn ) as rst:
 		meta = rst.meta.copy()
+		print(meta)
+        
 		meta.update( compress='lzw', dtype='float32', nodata=0 )
 		arr = rst.read(1)
 
-	arr_out = np.copy(arr).astype(np.float32)
-	ind = np.where( arr != meta['nodata'] )
+	print(arr.shape)
+	arr_out = np.copy(arr).astype(np.double)
 
 	# scale it:
 	if fn.endswith(('_01.tif','_02.tif','_03.tif','_04.tif','_09.tif','_10.tif')):
-		arr_out[ind] = arr[ind]*0.001
+		
+	 	invalid = np.logical_or(arr_out < -100, arr_out > 5000)
+	 	invalid = np.logical_or(invalid, arr_out == -28672)
+	 	arr_out[invalid] = np.nan
+	 	arr_out = arr_out * 0.001
+	 	arr_out = np.ma.masked_array(arr_out, np.isnan(arr_out))
+
+	 	print(arr_out)
 	
-	elif fn.endswith(('_11.tif','_12.tif','_13.tif')):
-		arr_out[ind] = arr[ind]*0.01
+	# elif fn.endswith(('_11.tif','_12.tif','_13.tif')):
+	# 	invalid = np.logical_or(arr_out < -100, arr_out > 5000)
+	# 	invalid = np.logical_or(invalid, arr_out == -28672)
+	# 	arr_out[invalid] = np.nan
+	# 	arr_out = arr_out * 0.01
+	# 	arr_out = np.ma.masked_array(arr_out, np.isnan(arr_out))
 
 	else:
 		raise BaseException('wrong bands')
@@ -402,14 +417,14 @@ def rescale_values( fn ):
 	# make the output filename and dump to disk
 	out_fn = fn.replace( 'warped', 'rescaled' )
 	with rasterio.open( out_fn, 'w', **meta ) as out:
-		plt.imshow(arr_out, cmap='RdYlGn')
-		plt.colorbar()
-		plt.title('Rescaled')
-		plt.xlabel('Column #')
-		plt.ylabel('Row #')           
-		png_fn = out_fn.replace( '.tif', '.png' )
-		plt.savefig(png_fn)          
-		out.write( arr_out.astype( np.float32 ), 1 )
+	 	plt.imshow(arr_out, cmap='RdYlGn')
+	 	plt.colorbar()
+	 	plt.title('Rescaled')
+	 	plt.xlabel('Column #')
+	 	plt.ylabel('Row #')           
+	 	png_fn = out_fn.replace( '.tif', '.png' )
+	 	plt.savefig(png_fn)          
+	 	out.write( arr_out.astype( np.float32 ), 1 )
 	return out_fn
 
 
@@ -469,7 +484,7 @@ def save_raster_comp (raster_data, bands, output_name, dataset, NaN_Value):
     print(x_size)
     print(y_size)
     
-    srs = 'PROJCS["WGS 84 / Pseudo-Mercator", GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]],PROJECTION["Mercator_1SP"],PARAMETER["central_meridian",0],PARAMETER["scale_factor",1],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["metre",1,AUTHORITY["EPSG","9001"]],EXTENSION["PROJ4","+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs"],AUTHORITY["EPSG","3857"]]'
+    srs = 'PROJCS["WGS_1984_UTM_Zone_48N",GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",105],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",0],UNIT["Meter",1]]'
     #srs = g.GetProjectionRef () # Projection
     #raster_data = g.ReadAsArray().astype(float)
     NaN_rast = NaN_Value
@@ -530,7 +545,7 @@ def tile_process(store_path_terr,store_path_aqua,ti):
             dataset_LSTn = gdal.Open(subsets[4][0])
             qc_LSTn = gdal.Open(subsets[5][0])
         
-            # populate array with data where the criterion (QC = 0) is met
+            # populate array with data wgridmetahere the criterion (QC = 0) is met
             dummy = dataset_LSTd.ReadAsArray().astype(float)
             
             dummy[qc_LSTd.ReadAsArray()>0] = np.nan
@@ -616,7 +631,7 @@ def mosaic_Gtif(tis,out_fi='mos.tif'):
     return
 
 
-def wrap_tile_process(store_path_terr, store_path_aqua, ti):
+def wrap_tile_process(store_path_terr, sgridmetatore_path_aqua, ti):
     #if os.path.isfile('./res/'+str(ti).zfill(4)+'_d.tif')==False:
     try:
         tile_process(store_path_terr,store_path_aqua,ti)
@@ -627,22 +642,52 @@ def wrap_tile_process(store_path_terr, store_path_aqua, ti):
 def processHDF(filename):
     # Read HDF File 
     hdf = SD(filename, SDC.READ)
+
+    datasets = hdf.datasets()
+
+    for i,v in enumerate(datasets):
+        print('{0}. {1}'. format(i+1,v))
     
     # Select Optical Depth .55 micron wavelength
     optical_depth_055 = hdf.select('Optical_Depth_055')
+    optical_depth = optical_depth_055[0,:,:].astype(np.double)
     shape = optical_depth_055[:,:,:].shape
 
     # Obtain fillValue and Scale factor for optical depth
     OD_fillValue  = optical_depth_055.getfillvalue()
     OD_scaleFactor = optical_depth_055.attributes(full=1)["scale_factor"][0]
+    
+    attrs = optical_depth_055.attributes(full=1)
+    lna=attrs["long_name"]
+    long_name = lna[0]
+    vra=attrs["valid_range"]
+    valid_range = vra[0]
+    fva=attrs["_FillValue"]
+    _FillValue = fva[0]
+    sfa=attrs["scale_factor"]
+    scale_factor = sfa[0]        
+    ua=attrs["unit"]
+    units = ua[0]
+    aoa=attrs["add_offset"]
+    add_offset = aoa[0]
 
     # Flatten and merge data based on number of orbits
-    optical_depth = np.array([], dtype=np.int16).reshape(0,1)
-    for i in range(shape[0]):
-        optical_depth = np.append(optical_depth,optical_depth_055[i,:,:].ravel())
+    # optical_depth = np.array([], dtype=np.int16).reshape(0,1)
+    # for i in range(shape[0]):
+    #    optical_depth = np.append(optical_depth,optical_depth_055[i,:,:].ravel())
 
     # Scale data based on the scale factor.
-    optical_depth = optical_depth*OD_scaleFactor
+
+    # Apply the attributes to the data.
+    invalid = np.logical_or(optical_depth < valid_range[0], optical_depth > valid_range[1])
+    invalid = np.logical_or(invalid, optical_depth == _FillValue)
+    optical_depth[invalid] = np.nan
+    optical_depth = (optical_depth - add_offset) * scale_factor
+    optical_depth = np.ma.masked_array(optical_depth, np.isnan(optical_depth))
+
+    print(OD_fillValue)
+    print(OD_scaleFactor)
+    print(optical_depth)
 
     # Select water vopur readings
     Column_WV_n = hdf.select('Column_WV')
@@ -673,21 +718,5 @@ def processHDF(filename):
 
     # Scale data based on the scale factor.
     AOD_Uncertainty = AOD_Uncertainty*UN_scaleFactor
-
-    # Ravel and obtain longitude and latitude values as numpy array
-    long = np.tile(np.arange(lon_min,lon_max,((lon_max-lon_min)/shape[1])),shape[1])
-    lat = np.repeat(np.arange(lat_max,lat_min,((lat_min-lat_max)/shape[1])),shape[1])
-
-    # Create a column stack numpy array of latitude
-    data = np.column_stack([np.tile(lat,shape[0]), np.tile(long,shape[0]),optical_depth,Column_WV,AOD_Uncertainty])    
     
-    # Create dataframe from numpy column stack
-    data1 = pd.DataFrame(data=data,columns=["Lat","Long","optical_depth","Column_WV","AOD_Uncertainty"])
-    
-    # Remove rows with fill values
-    data2 = data1[(data1.optical_depth != OD_fillValue) & (data1.Column_WV != WV_fillValue) & (data1.AOD_Uncertainty != UN_fillValue)]
-    
-    # Average values with similar Latitude and Longitudes
-    data3 = data2.groupby(['Lat','Long'])[['optical_depth','Column_WV','AOD_Uncertainty']].mean().reset_index()
-    
-    return data3,hdf,AOD_Uncertainty,Column_WV, optical_depth
+    return "TestModisAOD"
