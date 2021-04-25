@@ -2,7 +2,7 @@ import datetime
 import logging as log
 
 import coloredlogs
-from flask import Flask
+from flask import Flask, render_template
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
 from flask_jwt_extended import (
@@ -97,7 +97,7 @@ def create_app(config_name):
     @app.route("/")
     def hello_world():
         # render home template
-        return "Welcome to Remote Sensing Server!"
+        return render_template('index.html')
 
     @app.route('/ee/search/<cloudcover>/<startDate>/<endDate>')
     def search(cloudcover, startDate,endDate):
