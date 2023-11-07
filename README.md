@@ -2,7 +2,7 @@
 <br />
 <p align="center">
 
-  <h3 align="center">Hazard Map System for Ho Chi Minh City using Low-energy Sensors and Remote Sensing Data</h3>
+  <h3 align="center">Hazard Map System for Ho Chi Minh City using Remote Sensing Data</h3>
 </p>
 
 <!-- ABOUT THE PROJECT -->
